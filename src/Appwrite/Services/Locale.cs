@@ -1,4 +1,4 @@
-namespace Appwrite.Client.Services
+namespace Appwrite.Services
 {
     public class Locale : Service
     {

@@ -1,6 +1,6 @@
-using Appwrite.Client.Helpers;
+using Appwrite.Helpers;
 
-namespace Appwrite.Client.Services
+namespace Appwrite.Services
 {
     public class Avatars : Service
     {

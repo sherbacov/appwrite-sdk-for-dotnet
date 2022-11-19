@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30114.128
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Appwrite.Client", "Appwrite.Client\Appwrite.Client.csproj", "{72C1675D-1EF2-4370-A3CC-A5C10214A234}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Appwrite", "Appwrite\Appwrite.csproj", "{72C1675D-1EF2-4370-A3CC-A5C10214A234}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Appwrite.Tests", "Appwrite.Tests\Appwrite.Tests.csproj", "{B0E01AFF-A44B-4668-A783-97AF4B7DAD75}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{72C1675D-1EF2-4370-A3CC-A5C10214A234}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{72C1675D-1EF2-4370-A3CC-A5C10214A234}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{72C1675D-1EF2-4370-A3CC-A5C10214A234}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0E01AFF-A44B-4668-A783-97AF4B7DAD75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0E01AFF-A44B-4668-A783-97AF4B7DAD75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0E01AFF-A44B-4668-A783-97AF4B7DAD75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0E01AFF-A44B-4668-A783-97AF4B7DAD75}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

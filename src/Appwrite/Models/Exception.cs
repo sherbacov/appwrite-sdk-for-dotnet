@@ -1,5 +1,5 @@
-namespace Appwrite.Client.Models
-{
+namespace Appwrite.Models;
+
     public class AppwriteException : Exception
     {
         public int? Code;
@@ -15,5 +15,5 @@ namespace Appwrite.Client.Models
         {
         }
     }
-}
+
 

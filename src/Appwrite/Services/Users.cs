@@ -1,6 +1,6 @@
-using Appwrite.Client.Models;
+using Appwrite.Models;
 
-namespace Appwrite.Client.Services
+namespace Appwrite.Services
 {
     public class Users : Service
     {

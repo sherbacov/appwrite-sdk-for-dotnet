@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Appwrite
-{
+namespace Appwrite;
+
     public class Rule
     {
         public string Label { get; set; }
@@ -13,4 +13,4 @@ namespace Appwrite
         public bool Required { get; set; }
         public bool Array { get; set; }
     }
-}
+

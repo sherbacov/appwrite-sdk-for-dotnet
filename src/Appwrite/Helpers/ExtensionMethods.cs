@@ -2,7 +2,7 @@
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 
-namespace Appwrite.Client.Helpers
+namespace Appwrite.Helpers
 {
     public static class ExtensionMethods
     {
@@ -15,6 +15,26 @@ namespace Appwrite.Client.Helpers
             };
 
             return JsonConvert.SerializeObject(dict, settings);
+        }
+
+        public static async Task<T> ToObject<T>(this HttpResponseMessage message)
+        {
+            //ITraceWriter traceWriter = new MemoryTraceWriter();
+
+            var settings = new JsonSerializerSettings
+            {
+                PreserveReferencesHandling = PreserveReferencesHandling.None,
+                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+                //TraceWriter = traceWriter, 
+                Converters = new List<JsonConverter> {new StringEnumConverter()}
+            };
+            
+            var content = await message.Content.ReadAsStringAsync();
+            var result = JsonConvert.DeserializeObject<T>(content, settings);
+
+            //Console.WriteLine(traceWriter);
+
+            return result;
         }
 
         public static string ToQueryString(this Dictionary<string, object> parameters)

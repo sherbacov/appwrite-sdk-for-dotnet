@@ -1,10 +1,84 @@
-using Appwrite.Client.Models;
+using System.Text.Json.Serialization;
+using Appwrite.Helpers;
+using Appwrite.Models;
+using Newtonsoft.Json;
 
-namespace Appwrite.Client.Services
+namespace Appwrite.Services
 {
+    public class ObjectModel
+    {
+        [JsonProperty("$id")]
+        public string Id { get; set; }
+        
+        [JsonProperty("$createdAt")]
+        public DateTime CreatedAt { get; set; }
+
+        [JsonProperty("$updatedAt")]
+        public DateTime UpdatedAt { get; set; }
+    }
+    
+    public class DatabaseModel : ObjectModel
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+    }
+
+    public class QueryDatabases
+    {
+        public int Total { get; set; }
+        public List<DatabaseModel> Databases { get; set; }
+    }
+    
+    public class Databases : Service
+    {
+        public Databases(Client client) : base(client)
+        {
+        }
+
+        private QueryDatabases _cache;
+        
+        public async Task<QueryDatabases> ListDatabases(
+            string[] queries = null, int? limit = 25,
+            int? offset = 0, OrderType orderType = OrderType.ASC)
+        {
+            var path = "/databases";
+
+            var objects = await ListObjects(path, queries, limit, offset, orderType);
+            
+            var result = await objects.ToObject<QueryDatabases>();
+
+            _cache = result;
+            
+            return result;
+        }
+
+        public async Task<Database> GetDatabase(string name)
+        {
+            // Lookup in cache
+            if (_cache != null)
+            {
+                var dbCache = _cache.Databases.FirstOrDefault(d => d.Name == name);
+                if (dbCache != null)
+                    return new Database(_client, dbCache.Id);
+            }
+
+            //Lookup database
+            var result = await ListDatabases(new Query().Equal("name", name).BuildUrl());
+            
+            var database = result.Databases.FirstOrDefault(d => d.Name == name);
+            
+            return new Database(_client, database.Id);
+        }
+    }
+    
     public class Database : Service
     {
-        public Database(Client client) : base(client) { }
+        public Database(Client client, string databaseId) : base(client)
+        {
+            DatabaseId = databaseId;
+        }
+        
+        public string DatabaseId { get; private set;}
 
         /// <summary>
         /// List Collections
@@ -15,22 +89,21 @@ namespace Appwrite.Client.Services
         /// modes](/docs/admin).
         /// </para>
         /// </summary>
-        public async Task<HttpResponseMessage> ListCollections(string search = "", int? limit = 25, int? offset = 0, OrderType orderType = OrderType.ASC) 
+        public async Task<HttpResponseMessage> ListCollections(
+            string[] queries = null, int? limit = 25, 
+            int? offset = 0, OrderType orderType = OrderType.ASC) 
         {
-            string path = "/database/collections";
+            var path = $"/databases/{DatabaseId}/collections";
 
-            Dictionary<string, object> parameters = new Dictionary<string, object>()
+            var parameters = new Dictionary<string, object>()
             {
-                { "search", search },
-                { "limit", limit },
-                { "offset", offset },
-                { "orderType", orderType.ToString() }
+                //{ "queries", queries },
+                //{ "limit", limit },
+                //{ "offset", offset },
+                //{ "orderType", orderType.ToString() }
             };
 
-            Dictionary<string, string> headers = new Dictionary<string, string>()
-            {
-                { "content-type", "application/json" }
-            };
+            var headers = JsonHeaders();
 
             return await _client.Call("GET", path, headers, parameters);
         }
@@ -43,7 +116,7 @@ namespace Appwrite.Client.Services
         /// </summary>
         public async Task<HttpResponseMessage> CreateCollection(string name, List<object> read, List<object> write, List<object> rules) 
         {
-            string path = "/database/collections";
+            var path = $"/database/{DatabaseId}/collections";
 
             Dictionary<string, object> parameters = new Dictionary<string, object>()
             {
@@ -53,10 +126,7 @@ namespace Appwrite.Client.Services
                 { "rules", rules }
             };
 
-            Dictionary<string, string> headers = new Dictionary<string, string>()
-            {
-                { "content-type", "application/json" }
-            };
+            Dictionary<string, string> headers = JsonHeaders();
 
             return await _client.Call("POST", path, headers, parameters);
         }
@@ -70,16 +140,13 @@ namespace Appwrite.Client.Services
         /// </summary>
         public async Task<HttpResponseMessage> GetCollection(string collectionId) 
         {
-            string path = "/database/collections/{collectionId}".Replace("{collectionId}", collectionId);
+            var path = $"/database/{DatabaseId}/collections/{collectionId}";
 
             Dictionary<string, object> parameters = new Dictionary<string, object>()
             {
             };
 
-            Dictionary<string, string> headers = new Dictionary<string, string>()
-            {
-                { "content-type", "application/json" }
-            };
+            Dictionary<string, string> headers = JsonHeaders();
 
             return await _client.Call("GET", path, headers, parameters);
         }

@@ -1,7 +1,7 @@
-using Appwrite.Client.Helpers;
-using Appwrite.Client.Models;
+using Appwrite.Helpers;
+using Appwrite.Models;
 
-namespace Appwrite.Client.Services
+namespace Appwrite.Services
 {
     public class Storage : Service
     {

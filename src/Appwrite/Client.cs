@@ -1,19 +1,19 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
-using Appwrite.Client.Helpers;
-using Appwrite.Client.Models;
+using Appwrite.Helpers;
+using Appwrite.Models;
 using Newtonsoft.Json.Linq;
 
-namespace Appwrite.Client
+namespace Appwrite
 {
     public class Client
     {
-        private readonly HttpClient http;
-        private readonly Dictionary<string, string> headers;
-        private readonly Dictionary<string, string> config;
-        private string endPoint;
-        private bool selfSigned;
+        private readonly HttpClient _http;
+        private readonly Dictionary<string, string> _headers;
+        private readonly Dictionary<string, string> _config;
+        private string _endPoint;
+        private bool _selfSigned;
         
         public Client() : this("https://appwrite.io/v1", false, new HttpClient())
         {
@@ -21,85 +21,86 @@ namespace Appwrite.Client
 
         public Client(string endPoint, bool selfSigned, HttpClient http)
         {
-            this.endPoint = endPoint;
-            this.selfSigned = selfSigned;
-            this.headers = new Dictionary<string, string>()
+            this._endPoint = endPoint;
+            this._selfSigned = selfSigned;
+            this._headers = new Dictionary<string, string>()
             {
                 { "content-type", "application/json" },
-                { "x-sdk-version", "appwrite:dotnet:0.3.0" },
-                { "X-Appwrite-Response-Format", "0.9.0" }
+                //{ "x-sdk-version", "appwrite:dotnet:0.3.0" },
+                //{ "X-Appwrite-Response-Format", "0.9.0" }
             };
-            this.config = new Dictionary<string, string>();
-            this.http = http;                 
+            this._config = new Dictionary<string, string>();
+            this._http = http;                 
         }
 
         public Client SetSelfSigned(bool selfSigned)
         {
-            this.selfSigned = selfSigned;
+            this._selfSigned = selfSigned;
             return this;
         }
 
         public Client SetEndPoint(string endPoint)
         {
-            this.endPoint = endPoint;
+            this._endPoint = endPoint;
             return this;
         }
 
         public string GetEndPoint()
         {
-            return endPoint;
+            return _endPoint;
         }
 
         public Dictionary<string, string> GetConfig()
         {
-            return config;
+            return _config;
         }
 
         /// <summary>Your project ID</summary>
         public Client SetProject(string value) {
-            config.Add("project", value);
+            _config.Add("project", value);
             AddHeader("X-Appwrite-Project", value);
             return this;
         }
 
         /// <summary>Your secret API key</summary>
         public Client SetKey(string value) {
-            config.Add("key", value);
+            _config.Add("key", value);
             AddHeader("X-Appwrite-Key", value);
             return this;
         }
 
         /// <summary>Your secret JSON Web Token</summary>
         public Client SetJWT(string value) {
-            config.Add("jWT", value);
+            _config.Add("jWT", value);
             AddHeader("X-Appwrite-JWT", value);
             return this;
         }
 
         public Client SetLocale(string value) {
-            config.Add("locale", value);
+            _config.Add("locale", value);
             AddHeader("X-Appwrite-Locale", value);
             return this;
         }
 
         public Client AddHeader(String key, String value)
         {
-            headers.Add(key, value);
+            _headers.Add(key, value);
             return this;
         }
 
         public async Task<HttpResponseMessage> Call(string method, string path, Dictionary<string, string> headers, Dictionary<string, object> parameters)
         {
-            if (selfSigned)
+            if (_selfSigned)
             {
                 ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
             }
 
-            bool methodGet = "GET".Equals(method, StringComparison.InvariantCultureIgnoreCase);
+            var methodGet = "GET".Equals(method, StringComparison.InvariantCultureIgnoreCase);
 
-            string queryString = methodGet ? "?" + parameters.ToQueryString() : string.Empty;
+            var queryString = methodGet ? "?" + parameters.ToQueryString() : string.Empty;
+            queryString = queryString.TrimEnd('?');
 
-            HttpRequestMessage request = new HttpRequestMessage(new HttpMethod(method), endPoint + path + queryString);
+            var request = new HttpRequestMessage(new HttpMethod(method), _endPoint + path + queryString);
 
             if ("multipart/form-data".Equals(headers["content-type"], StringComparison.InvariantCultureIgnoreCase))
             {
@@ -138,18 +139,18 @@ namespace Appwrite.Client
                 request.Content = new StringContent(body, Encoding.UTF8, "application/json");
             }
 
-            foreach (var header in this.headers)
+            foreach (var header in this._headers)
             {
                 if (header.Key.Equals("content-type", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(header.Value));
+                    _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(header.Value));
                 }
                 else
                 {
-                    if (http.DefaultRequestHeaders.Contains(header.Key)) {
-                        http.DefaultRequestHeaders.Remove(header.Key);
+                    if (_http.DefaultRequestHeaders.Contains(header.Key)) {
+                        _http.DefaultRequestHeaders.Remove(header.Key);
                     }
-                    http.DefaultRequestHeaders.Add(header.Key, header.Value);
+                    _http.DefaultRequestHeaders.Add(header.Key, header.Value);
                 }
             }
 
@@ -169,7 +170,7 @@ namespace Appwrite.Client
             }
             try
             {
-                var httpResponseMessage = await http.SendAsync(request);
+                var httpResponseMessage = await _http.SendAsync(request);
                 var code = (int) httpResponseMessage.StatusCode;
                 var response = await httpResponseMessage.Content.ReadAsStringAsync();
 
