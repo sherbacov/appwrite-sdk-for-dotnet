@@ -6,12 +6,18 @@ namespace Appwrite.Helpers
 {
     public static class ExtensionMethods
     {
+        public static string ToJson(this object item)
+        {
+            return JsonConvert.SerializeObject(item);
+        }
+        
         public static string ToJson(this Dictionary<string, object> dict)
         {
             var settings = new JsonSerializerSettings
             {
-                ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                Converters = new List<JsonConverter> { new StringEnumConverter() }
+                //ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                //ContractResolver = new DefaultContractResolver(),
+                //Converters = new List<JsonConverter> { new StringEnumConverter() }
             };
 
             return JsonConvert.SerializeObject(dict, settings);

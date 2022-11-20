@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+using System.Reflection;
 using Appwrite.Helpers;
 using Appwrite.Models;
 using Newtonsoft.Json;
@@ -27,6 +27,68 @@ namespace Appwrite.Services
     {
         public int Total { get; set; }
         public List<DatabaseModel> Databases { get; set; }
+    }
+    
+    public class CollectionAttribute
+    {
+        public string Key { get; set; }
+        public string Type { get; set; }
+        public string Status { get; set; }
+        public bool Required { get; set; }
+        public bool Array { get; set; }
+        public int Size { get; set; }
+        public object Default { get; set; }
+        public List<string> Elements { get; set; }
+        public string Format { get; set; }
+        public int? Min { get; set; }
+        public int? Max { get; set; }
+    }
+
+    public class CollectionModel
+    {
+        [JsonProperty("$id")]
+        public string Id { get; set; }
+
+        [JsonProperty("$createdAt")]
+        public DateTime CreatedAt { get; set; }
+
+        [JsonProperty("$updatedAt")]
+        public DateTime UpdatedAt { get; set; }
+
+        [JsonProperty("$permissions")]
+        public List<object> Permissions { get; set; }
+        public string DatabaseId { get; set; }
+        public string Name { get; set; }
+        public bool Enabled { get; set; }
+        public bool DocumentSecurity { get; set; }
+        public List<CollectionAttribute> Attributes { get; set; }
+        public List<CollectionIndex> Indexes { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Name} [{Id}]";
+        }
+    }
+
+    public class CollectionIndex
+    {
+        public string Key { get; set; }
+        public string Type { get; set; }
+        public string Status { get; set; }
+        public List<string> Attributes { get; set; }
+        public List<string> Orders { get; set; }
+    }
+
+    public class QueryCollections
+    {
+        public int Total { get; set; }
+        public List<CollectionModel> Collections { get; set; }
+    }
+    
+    public class QueryDocuments<T>
+    {
+        public int Total { get; set; }
+        public List<T> Documents { get; set; }
     }
     
     public class Databases : Service
@@ -89,23 +151,17 @@ namespace Appwrite.Services
         /// modes](/docs/admin).
         /// </para>
         /// </summary>
-        public async Task<HttpResponseMessage> ListCollections(
+        public async Task<QueryCollections> ListCollections(
             string[] queries = null, int? limit = 25, 
             int? offset = 0, OrderType orderType = OrderType.ASC) 
         {
             var path = $"/databases/{DatabaseId}/collections";
 
-            var parameters = new Dictionary<string, object>()
-            {
-                //{ "queries", queries },
-                //{ "limit", limit },
-                //{ "offset", offset },
-                //{ "orderType", orderType.ToString() }
-            };
+            var objects = await ListObjects(path, queries, limit, offset, orderType);
+            
+            var result = await objects.ToObject<QueryCollections>();
 
-            var headers = JsonHeaders();
-
-            return await _client.Call("GET", path, headers, parameters);
+            return result;
         }
 
         /// <summary>
@@ -138,17 +194,28 @@ namespace Appwrite.Services
         /// object with the collection metadata.
         /// </para>
         /// </summary>
-        public async Task<HttpResponseMessage> GetCollection(string collectionId) 
+        public async Task<HttpResponseMessage> GetCollectionById(string collectionId) 
         {
             var path = $"/database/{DatabaseId}/collections/{collectionId}";
 
-            Dictionary<string, object> parameters = new Dictionary<string, object>()
-            {
-            };
+            var parameters = new Dictionary<string, object>() {};
 
-            Dictionary<string, string> headers = JsonHeaders();
+            var headers = JsonHeaders();
 
             return await _client.Call("GET", path, headers, parameters);
+        }
+
+        public async Task<Collection<Type>> GetCollection<Type>(string name)
+        {
+            //Lookup database
+            var result = await ListCollections(new Query().Equal("name", name).BuildUrl());
+            
+            var collection = result.Collections.FirstOrDefault(d => d.Name == name);
+
+            if (collection == null)
+                throw new ArgumentException($"Collection {name} not found.", nameof(name));
+            
+            return new Collection<Type>(_client, DatabaseId, collection.Id);
         }
 
         /// <summary>
@@ -200,6 +267,21 @@ namespace Appwrite.Services
             return await _client.Call("DELETE", path, headers, parameters);
         }
 
+
+    };
+
+
+    public class Collection<T> : Service
+    {
+        public Collection(Client client, string databaseId, string collectionId) : base(client)
+        {
+            DatabaseId = databaseId;
+            CollectionId = collectionId;
+        }
+        
+        public string DatabaseId { get; private set;}
+        public string CollectionId { get; private set;}
+        
         /// <summary>
         /// List Documents
         /// <para>
@@ -209,9 +291,10 @@ namespace Appwrite.Services
         /// modes](/docs/admin).
         /// </para>
         /// </summary>
-        public async Task<HttpResponseMessage> ListDocuments(string collectionId, List<object> filters = null, int? limit = 25, int? offset = 0, string orderField = "", OrderType orderType = OrderType.ASC, string orderCast = "string", string search = "") 
+        public async Task<HttpResponseMessage> ListDocuments(List<object> filters = null, int? limit = 25, int? offset = 0,
+            string orderField = "", OrderType orderType = OrderType.ASC, string orderCast = "string", string search = "") 
         {
-            string path = "/database/collections/{collectionId}/documents".Replace("{collectionId}", collectionId);
+            string path = $"/databases/{DatabaseId}/collections/{CollectionId}/documents";
 
             Dictionary<string, object> parameters = new Dictionary<string, object>()
             {
@@ -232,6 +315,17 @@ namespace Appwrite.Services
             return await _client.Call("GET", path, headers, parameters);
         }
 
+
+
+        public async Task<QueryDocuments<T>> ListDocument()
+        {
+            var objects = await ListDocuments();
+            
+            var result = await objects.ToObject<QueryDocuments<T>>();
+
+            return result;
+        }
+
         /// <summary>
         /// Create Document
         /// <para>
@@ -241,27 +335,59 @@ namespace Appwrite.Services
         /// directly from your database console.
         /// </para>
         /// </summary>
-        public async Task<HttpResponseMessage> CreateDocument(string collectionId, object data, List<object> read = null, List<object> write = null, string parentDocument = "", string parentProperty = "", string parentPropertyType = "assign") 
+        public async Task<HttpResponseMessage> CreateDocument(object data, 
+            List<object> read = null, List<object> write = null, string parentDocument = "", 
+            string parentProperty = "", string parentPropertyType = "assign") 
         {
-            string path = "/database/collections/{collectionId}/documents".Replace("{collectionId}", collectionId);
+            var path = $"/databases/{DatabaseId}/collections/{CollectionId}/documents";
 
-            Dictionary<string, object> parameters = new Dictionary<string, object>()
+            var parameters = new Dictionary<string, object>()
             {
                 { "data", data },
-                { "read", read },
-                { "write", write },
-                { "parentDocument", parentDocument },
-                { "parentProperty", parentProperty },
-                { "parentPropertyType", parentPropertyType }
+                { "documentId", "unique()" },
+                //{ "read", read },
+                //{ "write", write },
+                //{ "parentDocument", parentDocument },
+                //{ "parentProperty", parentProperty },
+                //{ "parentPropertyType", parentPropertyType }
             };
 
-            Dictionary<string, string> headers = new Dictionary<string, string>()
-            {
-                { "content-type", "application/json" }
-            };
+            var headers = JsonHeaders();
 
             return await _client.Call("POST", path, headers, parameters);
         }
+
+        
+        public async Task<T> CreateDocumentT (T data)
+        {
+            
+            // var infos = data.GetType().GetProperties();
+            //
+            // var dix = new Dictionary<string,object> ();
+            //
+            // foreach (PropertyInfo info in infos)
+            // {
+            //     dix.Add(info.Name, info.GetValue(data, null).ToString());
+            // }
+            
+            //var objectData = JsonConvert.SerializeObject(data);
+
+            var result = await CreateDocument(data);
+
+            var content = await result.Content.ReadAsStringAsync();
+
+            return data;
+        }
+
+
+        public async Task<T> GetDocument(string documentId)
+        {
+            var message = await GetDocumentById(documentId);
+            var doc = await message.ToObject<T>();
+
+            return doc;
+        }
+
 
         /// <summary>
         /// Get Document
@@ -270,18 +396,15 @@ namespace Appwrite.Services
         /// object with the document data.
         /// </para>
         /// </summary>
-        public async Task<HttpResponseMessage> GetDocument(string collectionId, string documentId) 
+        public async Task<HttpResponseMessage> GetDocumentById(string documentId) 
         {
-            string path = "/database/collections/{collectionId}/documents/{documentId}".Replace("{collectionId}", collectionId).Replace("{documentId}", documentId);
+            var path = $"/databases/{DatabaseId}/collections/{CollectionId}/documents/{documentId}";
 
-            Dictionary<string, object> parameters = new Dictionary<string, object>()
+            var parameters = new Dictionary<string, object>()
             {
             };
 
-            Dictionary<string, string> headers = new Dictionary<string, string>()
-            {
-                { "content-type", "application/json" }
-            };
+            var headers = JsonHeaders();
 
             return await _client.Call("GET", path, headers, parameters);
         }
@@ -335,5 +458,5 @@ namespace Appwrite.Services
 
             return await _client.Call("DELETE", path, headers, parameters);
         }
-    };
+    }
 }

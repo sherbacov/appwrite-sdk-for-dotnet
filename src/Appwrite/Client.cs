@@ -134,7 +134,7 @@ namespace Appwrite
             }
             else if (!methodGet)
             {
-                string body = parameters.ToJson();
+                var body = parameters.ToJson();
 
                 request.Content = new StringContent(body, Encoding.UTF8, "application/json");
             }
