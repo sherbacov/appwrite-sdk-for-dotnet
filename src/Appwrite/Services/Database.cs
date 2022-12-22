@@ -97,7 +97,7 @@ namespace Appwrite.Services
         {
         }
 
-        private QueryDatabases _cache;
+        private QueryDatabases? _cache;
         
         public async Task<QueryDatabases> ListDatabases(
             string[] queries = null, int? limit = 25,
@@ -117,12 +117,9 @@ namespace Appwrite.Services
         public async Task<Database> GetDatabase(string name)
         {
             // Lookup in cache
-            if (_cache != null)
-            {
-                var dbCache = _cache.Databases.FirstOrDefault(d => d.Name == name);
-                if (dbCache != null)
-                    return new Database(_client, dbCache.Id);
-            }
+            var dbCache = _cache?.Databases.FirstOrDefault(d => d.Name == name);
+            if (dbCache != null)
+                return new Database(_client, dbCache.Id);
 
             //Lookup database
             var result = await ListDatabases(new Query().Equal("name", name).BuildUrl());
@@ -335,7 +332,7 @@ namespace Appwrite.Services
         /// directly from your database console.
         /// </para>
         /// </summary>
-        public async Task<HttpResponseMessage> CreateDocument(object data, 
+        public async Task<HttpResponseMessage> CreateDocumentMessage(object data, 
             List<object> read = null, List<object> write = null, string parentDocument = "", 
             string parentProperty = "", string parentPropertyType = "assign") 
         {
@@ -358,27 +355,15 @@ namespace Appwrite.Services
         }
 
         
-        public async Task<T> CreateDocumentT (T data)
+        public async Task<T> CreateDocument (T data)
         {
-            
-            // var infos = data.GetType().GetProperties();
-            //
-            // var dix = new Dictionary<string,object> ();
-            //
-            // foreach (PropertyInfo info in infos)
-            // {
-            //     dix.Add(info.Name, info.GetValue(data, null).ToString());
-            // }
-            
-            //var objectData = JsonConvert.SerializeObject(data);
+            var result = await CreateDocumentMessage(data);
 
-            var result = await CreateDocument(data);
+            //var content = await result.Content.ReadAsStringAsync();
+            var item = await result.ToObject<T>();
 
-            var content = await result.Content.ReadAsStringAsync();
-
-            return data;
+            return item;
         }
-
 
         public async Task<T> GetDocument(string documentId)
         {

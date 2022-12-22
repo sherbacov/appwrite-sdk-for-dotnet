@@ -40,8 +40,17 @@ public class Tests
             .SetProject(project)
             // Your secret API key
             .SetKey(key);
-    }   
+    }
 
+    [Test]
+    public async Task CreateDatabases()
+    {
+        //var databases = new Databases(_client);
+        //databases.ListDatabases()
+        
+    }
+    
+    
     [Test]
     public async Task TestDatabases()
     {
@@ -69,11 +78,10 @@ public class Tests
         public string EMail { get; set; }
         public string Phone { get; set; }
         public string Signer { get; set; }
-        public string Code { get; set; }
         public string Type { get; set; }
 
-        //[JsonProperty("$id")]
-        //public string id { get; set; }
+        [JsonProperty("$id")]
+        public string Id { get; set; }
 
         // [JsonProperty("$createdAt")]
         // public DateTime createdAt { get; set; }
@@ -105,20 +113,10 @@ public class Tests
         
         var doc = await collection.GetDocument("6377e0fcb851bd4e2eb0");
 
-
-
-        doc.Name = "zzzzs2";
-        doc.Code = "dsadsad3";
-
-        //doc.id = "";
-        //doc.Name = "test";
-
-        //var clientTest = new ClientModel();
-        //clientTest.Name = "test";
-        //clientTest.Code = "testCode";
+        doc.Name = "zzzzs4";
         
+        var created = await collection.CreateDocument(doc);
         
-        await collection.CreateDocumentT(doc);
         //var content = await result.Content.ReadAsStringAsync();
     }
     
